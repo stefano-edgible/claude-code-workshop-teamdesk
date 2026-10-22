@@ -22,6 +22,9 @@ COPY packages/services/package.json packages/services/
 RUN bun install --frozen-lockfile --production --ignore-scripts
 
 FROM oven/bun:1.3.11-slim
+LABEL org.opencontainers.image.source="https://github.com/stefano-edgible/claude-code-workshop-teamdesk" \
+      org.opencontainers.image.description="Teamdesk: rooms, bookings and tasks for a small team" \
+      org.opencontainers.image.licenses="MIT"
 WORKDIR /app/apps/web
 ENV NODE_ENV=production \
     PORT=3000 \

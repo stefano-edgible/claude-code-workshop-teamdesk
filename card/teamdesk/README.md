@@ -87,6 +87,17 @@ That prints `302` and an `edgible.com/application-access/` address, so the org s
 
 The rest of the setup is in the [Teamdesk docs](https://github.com/stefano-edgible/claude-code-workshop-teamdesk).
 
+## Customising
+
+The card runs a published image, so a new feature means a new image. The source is [stefano-edgible/claude-code-workshop-teamdesk](https://github.com/stefano-edgible/claude-code-workshop-teamdesk), and the image names it too (`docker inspect` shows `org.opencontainers.image.source`).
+
+1. Fork the repository and clone it. `bun install`, then `bun run dev` serves it with demo data on port 3000.
+2. Make the change. A feature is usually a table in `packages/db/src/schema.ts`, a query module, a service in `packages/services`, a thin tRPC router and a route. The repository's `CLAUDE.md` lists the rules. After a schema change run `cd packages/db && bun run generate` and commit `migrations/`: the app applies pending migrations when it starts, so existing data is upgraded in place.
+3. Build and push your own image, for example `docker build -t ghcr.io/<you>/teamdesk:1.1.0 .`.
+4. Back the card up first (migrations cannot be undone), then change the `image:` line in `docker-compose.yml` and run `docker compose --env-file teamdesk/card.env -f teamdesk/docker-compose.yml up -d --wait`. The data stays in `teamdesk-data`.
+
+Editing `docker-compose.yml` makes your copy of the card your own, so take later changes to the card by comparing the files. If the feature would help others, send a pull request to the repository instead and use the upstream image once it is released.
+
 ## Tear down
 
 Four steps, in this order. Step 1 runs wherever `edgible` is logged in. Steps 2 to 4 run on the machine that runs the containers. Steps 2 and 3 read `card.env`, so keep it until step 4.
