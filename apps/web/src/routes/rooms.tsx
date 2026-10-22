@@ -1,4 +1,9 @@
-import { ROOM_CAPACITY_MAX, ROOM_NAME_MAX_LENGTH } from "@repo/db/shared";
+import {
+  ROOM_CAPACITY_MAX,
+  ROOM_NAME_MAX_LENGTH,
+  ROOM_TAG_MAX_LENGTH,
+  ROOM_TAGS_MAX,
+} from "@repo/db/shared";
 import { createFileRoute } from "@tanstack/react-router";
 import { type FormEvent, useCallback } from "react";
 import FormError from "#/components/form-error";
@@ -10,6 +15,7 @@ import { Input } from "#/components/ui/input";
 import { useActingMember } from "#/hooks/use-acting-member";
 import { useAction } from "#/hooks/use-action";
 import { getTrpc } from "#/integrations/trpc/client";
+import { parseTags } from "#/lib/tags";
 
 export const Route = createFileRoute("/rooms")({
   loader: async () => {
@@ -29,6 +35,7 @@ function RoomsPage() {
   const { actingMember, setActingMemberId } = useActingMember(members);
   const addRoom = useAction();
   const archiveRoom = useAction();
+  const setRoomTags = useAction();
   const actorId = actingMember?.id ?? "";
 
   const handleAdd = useCallback(
@@ -42,6 +49,7 @@ function RoomsPage() {
           room: {
             capacity: Number(data.get("capacity")),
             name: String(data.get("name") ?? ""),
+            tags: parseTags(String(data.get("tags") ?? "")),
           },
         })
       );
@@ -58,6 +66,18 @@ function RoomsPage() {
         getTrpc().rooms.archive.mutate({ actorId, roomId })
       ),
     [actorId, archiveRoom.run]
+  );
+
+  const handleSetTags = useCallback(
+    (roomId: string, text: string) =>
+      setRoomTags.run(() =>
+        getTrpc().rooms.setTags.mutate({
+          actorId,
+          roomId,
+          tags: parseTags(text),
+        })
+      ),
+    [actorId, setRoomTags.run]
   );
 
   return (
@@ -96,18 +116,28 @@ function RoomsPage() {
             required
             type="number"
           />
+          <Input
+            aria-label="Tags"
+            name="tags"
+            placeholder="Tags, comma separated"
+          />
           <Button disabled={addRoom.pending} type="submit">
             {addRoom.pending ? "Adding…" : "Add room"}
           </Button>
         </div>
+        <p className="mt-2 mb-0 text-muted-foreground text-xs">
+          Up to {ROOM_TAGS_MAX} tags, {ROOM_TAG_MAX_LENGTH} characters each.
+        </p>
         <FormError message={addRoom.error} />
       </form>
 
       <section className="mt-10">
         <FormError message={archiveRoom.error} />
+        <FormError message={setRoomTags.error} />
         <RoomList
-          disabled={archiveRoom.pending}
+          disabled={archiveRoom.pending || setRoomTags.pending}
           onArchive={handleArchive}
+          onSetTags={handleSetTags}
           rooms={rooms}
         />
       </section>
