@@ -1,5 +1,5 @@
-// Rooms were the first table, written as hand-rolled SQL against the raw D1
-// API before the app moved to drizzle. They were ported to drizzle's `sql`
+// Rooms were the first table, written as hand-rolled SQL against the raw
+// SQLite API before the app moved to drizzle. They were ported to drizzle's `sql`
 // template so they run on the same `Database`, but never rewritten.
 import { sql } from "drizzle-orm";
 import type { Database } from "./schema.ts";

@@ -5,7 +5,7 @@ import { csrf } from "hono/csrf";
 import { createHonoContext } from "./server/trpc/context.ts";
 import { appRouter } from "./server/trpc/router.ts";
 
-const app = new Hono<{ Bindings: Env }>();
+const app = new Hono();
 
 app.get("/api/health", (c) => c.json({ status: "ok" }));
 
@@ -22,7 +22,7 @@ app.use(
     createContext: (_opts, c) => createHonoContext(c),
     endpoint: "/api/trpc",
     // Production clients only see "Internal server error" (see init.ts), so
-    // the real error goes to the Worker logs.
+    // the real error goes to the server log.
     onError: ({ error, path }) => {
       if (error.code === "INTERNAL_SERVER_ERROR") {
         console.error(`tRPC ${path ?? "?"} failed:`, error.cause ?? error);

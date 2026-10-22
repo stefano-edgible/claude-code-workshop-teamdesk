@@ -1,12 +1,12 @@
 # web
 
-A [TanStack Start](https://tanstack.com/start) app deployed on Cloudflare Workers, with [Hono](https://hono.dev) as the top-level `fetch` handler and [Cloudflare D1](https://developers.cloudflare.com/d1/) for data.
+A [TanStack Start](https://tanstack.com/start) app served by Bun, with [Hono](https://hono.dev) as the top-level `fetch` handler and a local SQLite file for data.
 
 There is no sign-in. Team procedures take the acting member as `actorId` in their input.
 
 ## Architecture
 
-`src/server.ts` is the Worker's entry point (`main` in `wrangler.jsonc`). It's a Hono app:
+`src/server.ts` is the server entry that `vite build` bundles into `dist/server/server.js`. It's a Hono app, and `serve.ts` runs it with `Bun.serve`, serving `dist/client` first:
 
 - Hono handles its own routes first (e.g. `/api/health`).
 - `/api/trpc/*` is the [tRPC](https://trpc.io) API, mounted with `@hono/trpc-server`.
@@ -16,23 +16,22 @@ There is no sign-in. Team procedures take the acting member as `actorId` in thei
 
 `src/server/trpc/` holds the API:
 
-- `context.ts` builds `ctx` for each call: the services from [`@repo/services`](../../packages/services) on this request's `drizzle(env.DB)`, and `userId`, the signed-in user or null. With no auth, `userId` is always null.
+- `context.ts` builds `ctx` for each call: the services from [`@repo/services`](../../packages/services) on the app's SQLite database, and `userId`, the signed-in user or null. With no auth, `userId` is always null.
 - `init.ts` defines `publicProcedure` (anyone) and `protectedProcedure` (signed-in users only, 401 otherwise). Both map a thrown `ServiceError` from `@repo/services/errors` to the matching tRPC error (404, 409, 403, 400).
 - `router.ts` is the app router: one sub-router per area (`members`, `rooms`, `bookings`, `tasks`, `announcements`, `notes`) and `me` (protected, the example).
 - `routers/<name>.ts` holds one router per area. Keep them thin: an input schema from the service, then one service call.
 
-`src/integrations/trpc/client.ts` exports `getTrpc()`. In the browser it is an HTTP client for `/api/trpc`. During SSR it runs the router in-process (`unstable_localLink`), so loaders do not fetch their own Worker. Call it from loaders and event handlers: `getTrpc().notes.list.query()`.
+`src/integrations/trpc/client.ts` exports `getTrpc()`. In the browser it is an HTTP client for `/api/trpc`. During SSR it runs the router in-process (`unstable_localLink`), so loaders do not fetch their own server. Call it from loaders and event handlers: `getTrpc().notes.list.query()`.
 
-## D1
+## SQLite
 
 Database access goes through the workspace package [`@repo/db`](../../packages/db) (see its README for the schema, the migrations and the test setup). In this app:
 
-- `wrangler.jsonc` declares the `d1_databases` binding named `DB`, with `migrations_dir` pointing at `packages/db/migrations`. `bun run cf-typegen` turns that into `env.DB: D1Database`.
-- `src/server/trpc/context.ts` calls `drizzle(env.DB)` from `drizzle-orm/d1` and hands it to the services. That is the one place the binding is read.
-- `src/routes/notes.tsx` is the example page: the loader calls `notes.list`, the form calls `notes.create` and invalidates the router. Its `errorComponent` renders a "could not reach D1" panel.
+- `src/server/trpc/context.ts` calls `openDatabase(process.env.DB_PATH ?? "./data/teamdesk.db")` from `@repo/db/sqlite` the first time a request needs it, and hands the result to the services. That is the one place the database is opened. Opening applies any pending migrations.
+- `src/routes/notes.tsx` is the example page: the loader calls `notes.list`, the form calls `notes.create` and invalidates the router. Its `errorComponent` renders a "could not open the database" panel.
 - Browser code imports only `@repo/db/shared`. The other entries import drizzle and belong behind tRPC.
 
-`bun run dev` runs `wrangler d1 migrations apply DB --local` before starting Vite, so the local database that Miniflare serves is always up to date. It lives in `.wrangler`, which is gitignored; delete that folder for a clean slate.
+`bun run dev` migrates and seeds `data/teamdesk.db` before starting Vite (under Bun, because `bun:sqlite` does not exist in Node). The `data` folder is gitignored; delete it for a clean slate.
 
 ## Develop
 
@@ -43,25 +42,18 @@ bun run dev
 
 The database needs no configuration for local work.
 
-## Build & deploy
-
-The local database only exists on your machine, so the deployed Worker needs a real D1 database. Create one, put the id it prints into `d1_databases[0].database_id` in `wrangler.jsonc`, then create the tables and load the demo data:
+## Build & run
 
 ```bash
-bunx wrangler d1 create teamdesk
-bun run db:apply:remote   # apply the migrations to the remote database
-bun run db:seed:remote    # load packages/db/seed.sql (safe to re-run)
+bun run build     # vite build -> dist/client and dist/server
+bun run start     # Bun.serve on PORT (default 3000)
 ```
 
-Without the demo data the deployed app has no members, so nobody can book. `bun run db:apply` and `bun run db:seed` do the same for the local database; `bun run dev` runs both before it starts.
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `PORT` | `3000` | Port to listen on |
+| `HOST` | `0.0.0.0` | Address to listen on |
+| `DB_PATH` | `./data/teamdesk.db` | The SQLite file; its folder is created if needed |
+| `MIGRATIONS_DIR` | next to `@repo/db` | Set by `bun run start` and the Dockerfile, because the built server is one bundle in another folder |
 
-Then:
-
-```bash
-bun run build     # vite build
-bun run deploy    # build + wrangler deploy
-```
-
-`wrangler.jsonc` has no `account_id` set, so `wrangler deploy`/`wrangler whoami` will use (or prompt for) whichever Cloudflare account is active.
-
-`bun run cf-typegen` regenerates `worker-configuration.d.ts` (the `Env` type) from `wrangler.jsonc` + local env vars — it also runs automatically via `prepare` (`bun install`), so a fresh clone typechecks without a manual step.
+The first start creates the tables. Load the demo team and rooms with `bun run db:seed` (from the repo root, with the same `DB_PATH`); without members nobody can book.

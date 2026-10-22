@@ -1,5 +1,5 @@
 // The tRPC client for route loaders and components. In the browser it calls
-// /api/trpc over HTTP. During SSR it calls the router in-process: a Worker
+// /api/trpc over HTTP. During SSR it calls the router in-process: a server
 // fetching its own URL is a needless round trip, and relative URLs do not
 // resolve on the server.
 //

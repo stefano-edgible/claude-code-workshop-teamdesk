@@ -10,6 +10,7 @@
     "./notes": "./src/notes.ts",
     "./rooms": "./src/rooms.ts",
     "./shared": "./src/shared.ts",
+    "./sqlite": "./src/sqlite.ts",
     "./tasks": "./src/tasks.ts",
     "./testing": "./src/testing.ts"
   },

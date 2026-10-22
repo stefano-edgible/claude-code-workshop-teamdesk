@@ -2,29 +2,29 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-Bun workspaces + Turborepo; TanStack Start on Cloudflare Workers with D1. Request flow:
-route component → tRPC router → service (`@repo/services/<module>`) → query functions (`@repo/db/<module>`) → Drizzle on D1.
+Bun workspaces + Turborepo; TanStack Start on a plain Bun server with a SQLite file. Request flow:
+route component → tRPC router → service (`@repo/services/<module>`) → query functions (`@repo/db/<module>`) → Drizzle on `bun:sqlite`.
 
 ## Commands (repo root)
 
-- `bun run dev`: migrates and seeds a local SQLite DB (`apps/web/.wrangler`), then serves :3000. No Cloudflare account needed; delete `.wrangler` for a clean slate.
+- `bun run dev`: migrates and seeds the SQLite file `data/teamdesk.db`, then serves :3000. Delete `data` for a clean slate.
 - `bun test`: all tests. One package: `cd packages/services && bun test`. One file: `bun test src/bookings.test.ts`.
 - `bun run check`: Ultracite (Biome) lint plus `tsc --noEmit`. `bun run fix` formats. The pre-commit hook runs `fix`, so unfixable lint blocks commits.
-- `bun run db:apply[:remote]` / `db:seed[:remote]`: migrate or seed the local or deployed D1.
-- `bun run deploy`: needs a Cloudflare login and a real D1 id in `apps/web/wrangler.jsonc`.
+- `bun run db:apply` / `db:seed`: migrate or seed the file at `DB_PATH`.
+- `bun run build` then `bun run start`: the production server (`apps/web/serve.ts`, `Bun.serve`) on `PORT`.
 - After a `schema.ts` change: `cd packages/db && bun run generate`.
-- `apps/web`: `generate-routes` rebuilds `routeTree.gen.ts`; `cf-typegen` rebuilds `Env` from `wrangler.jsonc`.
+- `apps/web`: `generate-routes` rebuilds `routeTree.gen.ts`.
 
 ## Rules
 
 - **Commit `packages/db/migrations/` including `meta/`.**
-  Why: drizzle diffs against the snapshot there; without it the next `generate` recreates existing tables. Wrangler, not drizzle-kit, applies them.
+  Why: drizzle diffs against the snapshot there; without it the next `generate` recreates existing tables. `openDatabase` (`@repo/db/sqlite`), not drizzle-kit, applies them.
 - **Browser code imports only `@repo/db/shared`.**
   Why: every other db/services entry imports drizzle and would pull it into the client bundle. Put UI-needed types and limits in `shared.ts`.
 - **Keep tRPC routers thin: an input schema from the service, then one service call.**
   Why: rules live in services so scripts and tests get them too, without tRPC.
-- **Read `env.DB` only in `apps/web/src/server/trpc/context.ts`; register new services there.**
-  Why: services and db functions take a drizzle instance, so the same code runs on D1 and on `bun:sqlite` in tests.
+- **Open the database only in `apps/web/src/server/trpc/context.ts` (via `openDatabase`); register new services there.**
+  Why: services and db functions take a drizzle instance, so the same code runs on the app's file and on in-memory SQLite in tests.
 - **Services re-parse input with the same zod schema the router uses.**
   Why: a caller that skips tRPC still gets validated input.
 - **Mutations take `actorId` first and check it (`requireMember`/`requireAdmin`); fail with `ServiceError` subclasses from `errors.ts`.**
@@ -41,5 +41,5 @@ route component → tRPC router → service (`@repo/services/<module>`) → quer
 ## App notes
 
 - `apps/web/src/server.ts` is a Hono app: Hono routes, then `/api/trpc/*` (CSRF-protected), then TanStack Start SSR.
-- `getTrpc()` is an HTTP client in the browser but runs the router in-process during SSR, so loaders don't fetch their own Worker.
+- `getTrpc()` is an HTTP client in the browser but runs the router in-process during SSR, so loaders don't fetch their own server.
 - The `#/*` import alias maps to `apps/web/src/`.

@@ -10,16 +10,13 @@
   "scripts": {
     "build": "turbo run build",
     "check": "ultracite check && turbo run typecheck",
-    "db:apply": "bun run --filter web db:apply",
-    "db:apply:remote": "bun run --filter web db:apply:remote",
+    "db:apply": "bun run --filter web db:migrate",
     "db:seed": "bun run --filter web db:seed",
-    "db:seed:remote": "bun run --filter web db:seed:remote",
-    "deploy": "turbo run deploy",
     "dev": "turbo run dev",
     "fix": "ultracite fix",
     "lint": "ultracite check",
-    "prepare": "husky && turbo run cf-typegen",
-    "preview": "turbo run preview",
+    "prepare": "husky",
+    "start": "bun run --filter web start",
     "test": "turbo run test"
   },
   "devDependencies": {

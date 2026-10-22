@@ -1,5 +1,5 @@
 // Every date the UI shows is UTC and built by slicing ISO strings, so the
-// Worker and the browser render the same text. `toLocaleString()` would differ
+// server and the browser render the same text. `toLocaleString()` would differ
 // by locale and timezone and cause a hydration mismatch.
 
 /** "2026-10-20T09:30:00.000Z" -> "2026-10-20 09:30 UTC" */

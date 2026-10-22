@@ -1,5 +1,5 @@
 // Runs against a throwaway in-memory SQLite database with the same migrations
-// D1 gets, so no server and no network are involved.
+// the app gets, so no server and no network are involved.
 import { Database as Sqlite } from "bun:sqlite";
 import { beforeEach, describe, expect, test } from "bun:test";
 import { resolve } from "node:path";

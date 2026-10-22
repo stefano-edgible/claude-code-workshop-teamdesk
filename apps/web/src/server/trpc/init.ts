@@ -33,7 +33,7 @@ const t = initTRPC.context<Context>().create({
     }
     return shape;
   },
-  // tRPC's own default reads process.env.NODE_ENV, which a Worker may not
+  // tRPC's own default reads process.env.NODE_ENV, which may not be
   // set, and would then send stack traces to production clients.
   isDev: import.meta.env.DEV,
 });

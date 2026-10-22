@@ -4,13 +4,6 @@
     "build": {
       "outputs": ["dist/**", ".output/**"]
     },
-    "cf-typegen": {
-      "cache": false
-    },
-    "deploy": {
-      "dependsOn": ["build"],
-      "cache": false
-    },
     "dev": {
       "cache": false,
       "persistent": true
@@ -18,16 +11,13 @@
     "generate-routes": {
       "cache": false
     },
-    "preview": {
-      "dependsOn": ["build"],
+    "start": {
       "cache": false,
       "persistent": true
     },
     "test": {
       "cache": false
     },
-    "typecheck": {
-      "dependsOn": ["cf-typegen"]
-    }
+    "typecheck": {}
   }
 }

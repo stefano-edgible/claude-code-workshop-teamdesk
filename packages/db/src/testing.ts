@@ -1,4 +1,4 @@
-// Test helper, not for app code: imports bun:sqlite, which the Worker lacks.
+// Test helper, not for app code: imports bun:sqlite, which a browser lacks.
 import { Database as Sqlite } from "bun:sqlite";
 import { resolve } from "node:path";
 import { drizzle } from "drizzle-orm/bun-sqlite";

@@ -8,13 +8,11 @@ dist-ssr
 .output
 *.tgz
 
-# TanStack / Vite / Cloudflare tooling
+# TanStack / Vite tooling
 .tanstack
 .vinxi
-.wrangler
 .nitro
 __unconfig*
-worker-configuration.d.ts
 
 # code coverage
 coverage
@@ -43,3 +41,9 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Finder (MacOS) folder config
 .DS_Store
+
+# SQLite database files
+data
+*.db
+*.db-shm
+*.db-wal

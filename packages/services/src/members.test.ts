@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test } from "bun:test";
+import { createTestDatabase } from "@repo/db/testing";
 import { createTeam, type Team } from "./fixtures.ts";
 import { createMembersService, type MembersService } from "./members.ts";
 
@@ -45,5 +46,28 @@ describe("members service", () => {
     expect(
       (await members.setRole(team.admin.id, team.ana.id, "admin")).role
     ).toBe("admin");
+  });
+
+  test("bootstrapAdmin makes an admin on an empty team, once", async () => {
+    const service = createMembersService(createTestDatabase());
+
+    const first = await service.bootstrapAdmin({
+      email: "Boss@Example.com",
+      name: "Boss",
+    });
+    expect(first).toMatchObject({ email: "boss@example.com", role: "admin" });
+
+    const second = await service.bootstrapAdmin({
+      email: "other@example.com",
+      name: "Other",
+    });
+    expect(second).toBeNull();
+    expect(await service.list()).toHaveLength(1);
+  });
+
+  test("bootstrapAdmin does nothing once the team has members", async () => {
+    expect(
+      await members.bootstrapAdmin({ email: "x@example.com", name: "X" })
+    ).toBeNull();
   });
 });

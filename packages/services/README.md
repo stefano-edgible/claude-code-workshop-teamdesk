@@ -1,6 +1,6 @@
 # @repo/services
 
-The service layer: business rules and input validation, on top of the query functions in [`@repo/db`](../db). The web app calls it through tRPC (`apps/web/src/server/trpc/`), but nothing here knows about tRPC, Hono or Cloudflare. A script or a test can use a service the same way.
+The service layer: business rules and input validation, on top of the query functions in [`@repo/db`](../db). The web app calls it through tRPC (`apps/web/src/server/trpc/`), but nothing here knows about tRPC or Hono. A script or a test can use a service the same way.
 
 ## Entry points
 
@@ -17,9 +17,9 @@ A service is a factory that takes a drizzle instance:
 
 ```ts
 import { createNotesService } from "@repo/services/notes";
-import { drizzle } from "drizzle-orm/d1";
+import { openDatabase } from "@repo/db/sqlite";
 
-const notes = createNotesService(drizzle(env.DB));
+const notes = createNotesService(openDatabase("./data/teamdesk.db"));
 await notes.create({ text: "  hello  " }); // stored as "hello"
 await notes.list();
 ```

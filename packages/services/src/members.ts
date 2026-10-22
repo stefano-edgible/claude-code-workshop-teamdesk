@@ -39,6 +39,13 @@ export type AddMemberInput = z.input<typeof addMemberInput>;
 export interface MembersService {
   /** Admins only. Throws ConflictError when the email is taken. */
   add: (actorId: string, input: AddMemberInput) => Promise<Member>;
+  /**
+   * First-run setup: creates an admin only while the team is empty, and does
+   * nothing otherwise. Returns the new admin, or null when nobody was added.
+   */
+  bootstrapAdmin: (
+    input: Omit<AddMemberInput, "role">
+  ) => Promise<Member | null>;
   /** Throws NotFoundError for an unknown id. */
   get: (id: string) => Promise<Member>;
   list: () => Promise<Member[]>;
@@ -75,6 +82,15 @@ export const createMembersService = (db: Database): MembersService => ({
       throw new ConflictError(`${data.email} is already on the team.`);
     }
     return await createMember(db, data);
+  },
+  bootstrapAdmin: async (input) => {
+    if ((await listMembers(db)).length > 0) {
+      return null;
+    }
+    return await createMember(
+      db,
+      addMemberInput.parse({ ...input, role: "admin" })
+    );
   },
   get: (id) => requireMember(db, id),
   list: () => listMembers(db),
