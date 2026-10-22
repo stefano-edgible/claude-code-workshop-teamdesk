@@ -31,6 +31,7 @@ export const roomsRouter = router({
         attendees: z.int().min(1),
         endsAt: z.string(),
         startsAt: z.string(),
+        tags: z.array(z.string()).default([]),
       })
     )
     .query(async ({ ctx, input }) => {
@@ -43,4 +44,23 @@ export const roomsRouter = router({
   list: publicProcedure
     .input(z.object({ includeArchived: z.boolean().default(false) }).optional())
     .query(({ ctx, input }) => ctx.services.rooms.list(input)),
+  setTags: publicProcedure
+    .input(
+      z.object({
+        actorId: z.string(),
+        roomId: z.string(),
+        tags: z.array(z.string()),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const result = await ctx.services.rooms.setTags(
+        input.actorId,
+        input.roomId,
+        input.tags
+      );
+      if (!result.ok) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: result.error });
+      }
+      return result.room;
+    }),
 });

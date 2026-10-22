@@ -9,6 +9,7 @@ export const freeRoomsInput = z.object({
   attendees: z.int().min(1).default(1),
   endsAt: z.iso.datetime(),
   startsAt: z.iso.datetime(),
+  tags: z.array(z.string()).default([]),
 });
 
 export type FreeRoomsInput = z.input<typeof freeRoomsInput>;
@@ -35,9 +36,14 @@ export const createAvailabilityService = (
     if (endsAt <= startsAt) {
       return { error: "The slot must end after it starts.", ok: false };
     }
-    const candidates = (await listRooms(db)).filter(
-      (room) => room.capacity >= parsed.data.attendees
-    );
+    const wanted = parsed.data.tags.map((tag) => tag.trim().toLowerCase());
+    const candidates = (await listRooms(db)).filter((room) => {
+      if (room.capacity < parsed.data.attendees) {
+        return false;
+      }
+      const have = room.tags.map((tag) => tag.toLowerCase());
+      return wanted.every((tag) => have.includes(tag));
+    });
     const clashes = await Promise.all(
       candidates.map((room) =>
         findOverlappingBookings(db, { endsAt, roomId: room.id, startsAt })

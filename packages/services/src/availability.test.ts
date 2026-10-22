@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test } from "bun:test";
 import { insertBooking } from "@repo/db/bookings";
+import { setRoomTags } from "@repo/db/rooms";
 import {
   type AvailabilityService,
   createAvailabilityService,
@@ -58,5 +59,56 @@ describe("availability service", () => {
     });
 
     expect(result.ok).toBe(false);
+  });
+
+  describe("tag filter", () => {
+    const slot = { endsAt: at("10:00"), startsAt: at("09:00") };
+    const names = (r: Awaited<ReturnType<AvailabilityService["freeRooms"]>>) =>
+      r.ok && r.rooms.map((room) => room.name);
+
+    beforeEach(async () => {
+      await setRoomTags(team.db, team.bigRoom.id, ["TV", "Whiteboard"]);
+      await setRoomTags(team.db, team.smallRoom.id, ["Whiteboard"]);
+    });
+
+    test("a tag matches case-insensitively", async () => {
+      const result = await availability.freeRooms({ ...slot, tags: ["tv"] });
+
+      expect(names(result)).toEqual(["Harbour"]);
+    });
+
+    test("several tags require all of them", async () => {
+      const one = await availability.freeRooms({
+        ...slot,
+        tags: ["whiteboard"],
+      });
+      const both = await availability.freeRooms({
+        ...slot,
+        tags: ["whiteboard", "TV"],
+      });
+
+      expect(names(one)).toEqual(["Bridge", "Harbour"]);
+      expect(names(both)).toEqual(["Harbour"]);
+    });
+
+    test("a matching room booked in the slot is excluded", async () => {
+      await insertBooking(team.db, {
+        attendees: 2,
+        endsAt: at("10:00"),
+        memberId: team.ana.id,
+        roomId: team.bigRoom.id,
+        startsAt: at("09:00"),
+        title: "Planning",
+      });
+      const result = await availability.freeRooms({ ...slot, tags: ["tv"] });
+
+      expect(names(result)).toEqual([]);
+    });
+
+    test("no tags leaves the result unchanged", async () => {
+      const result = await availability.freeRooms(slot);
+
+      expect(names(result)).toEqual(["Bridge", "Harbour"]);
+    });
   });
 });
