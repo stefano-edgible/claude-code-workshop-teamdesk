@@ -10,6 +10,7 @@ interface RoomRecord {
   capacity: number;
   id: number;
   name: string;
+  tags: string;
 }
 
 function mapRoom(r: RoomRecord): Room {
@@ -18,6 +19,7 @@ function mapRoom(r: RoomRecord): Room {
     capacity: r.capacity,
     id: String(r.id),
     name: r.name,
+    tags: JSON.parse(r.tags) as string[],
   };
 }
 
@@ -27,15 +29,15 @@ export async function listRooms(
 ): Promise<Room[]> {
   const records = await db.all<RoomRecord>(
     opts.includeArchived
-      ? sql`select id, name, capacity, archived from rooms order by name`
-      : sql`select id, name, capacity, archived from rooms where archived = 0 order by name`
+      ? sql`select id, name, capacity, archived, tags from rooms order by name`
+      : sql`select id, name, capacity, archived, tags from rooms where archived = 0 order by name`
   );
   return records.map(mapRoom);
 }
 
 export async function getRoom(db: Database, id: string): Promise<Room | null> {
   const records = await db.all<RoomRecord>(
-    sql`select id, name, capacity, archived from rooms where id = ${Number(id)}`
+    sql`select id, name, capacity, archived, tags from rooms where id = ${Number(id)}`
   );
   return records.length > 0 ? mapRoom(records[0] as RoomRecord) : null;
 }
@@ -43,10 +45,11 @@ export async function getRoom(db: Database, id: string): Promise<Room | null> {
 export async function insertRoom(
   db: Database,
   name: string,
-  capacity: number
+  capacity: number,
+  tags: string[] = []
 ): Promise<Room> {
   const records = await db.all<RoomRecord>(
-    sql`insert into rooms (name, capacity) values (${name}, ${capacity}) returning id, name, capacity, archived`
+    sql`insert into rooms (name, capacity, tags) values (${name}, ${capacity}, ${JSON.stringify(tags)}) returning id, name, capacity, archived, tags`
   );
   return mapRoom(records[0] as RoomRecord);
 }
@@ -58,5 +61,15 @@ export async function setRoomArchived(
 ): Promise<void> {
   await db.run(
     sql`update rooms set archived = ${archived ? 1 : 0} where id = ${Number(id)}`
+  );
+}
+
+export async function setRoomTags(
+  db: Database,
+  id: string,
+  tags: string[]
+): Promise<void> {
+  await db.run(
+    sql`update rooms set tags = ${JSON.stringify(tags)} where id = ${Number(id)}`
   );
 }

@@ -45,6 +45,8 @@ export const rooms = sqliteTable("rooms", {
   capacity: integer("capacity").notNull(),
   id: integer("id").primaryKey({ autoIncrement: true }),
   name: text("name").notNull().unique(),
+  // JSON array of strings, e.g. ["TV","Whiteboard"]. Parsed in rooms.ts.
+  tags: text("tags").notNull().default("[]"),
 });
 
 export const bookings = sqliteTable(

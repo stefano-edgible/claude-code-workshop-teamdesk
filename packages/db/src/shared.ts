@@ -29,6 +29,7 @@ export interface Room {
   capacity: number;
   id: string;
   name: string;
+  tags: string[];
 }
 
 export interface Booking {
@@ -64,6 +65,8 @@ export interface Announcement {
 export const MEMBER_NAME_MAX_LENGTH = 80;
 export const ROOM_NAME_MAX_LENGTH = 60;
 export const ROOM_CAPACITY_MAX = 200;
+export const ROOM_TAG_MAX_LENGTH = 30;
+export const ROOM_TAGS_MAX = 10;
 export const BOOKING_TITLE_MAX_LENGTH = 120;
 export const BOOKING_MIN_MINUTES = 15;
 export const BOOKING_MAX_MINUTES = 240;
