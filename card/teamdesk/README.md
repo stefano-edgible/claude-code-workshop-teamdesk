@@ -83,7 +83,7 @@ edgible app list
 curl -sS -o /dev/null -w '%{http_code} %{redirect_url}\n' "https://<teamdesk hostname>"
 ```
 
-That prints `302` and an `edgible.com/application-access/` address, so the org sign-in is in front. Open the address and sign in to Edgible. Teamdesk opens with its member picker: choose the admin, then add the rest of the team under Team and a room under Rooms.
+That prints `302` and an `edgible.com/application-access/` address, so the org sign-in is in front. Open the address and sign in to Edgible. Teamdesk opens on its home page, which has no member picker. Open Team, where the "Acting as" menu (on Team, Rooms, Bookings and Tasks) already shows the admin from `TEAMDESK_ADMIN_EMAIL`, add the rest of the team there, then add a room under Rooms.
 
 The rest of the setup is in the [Teamdesk docs](https://github.com/stefano-edgible/claude-code-workshop-teamdesk).
 
