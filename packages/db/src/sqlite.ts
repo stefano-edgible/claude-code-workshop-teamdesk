@@ -3,15 +3,18 @@
 import { Database as Sqlite } from "bun:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { drizzle } from "drizzle-orm/bun-sqlite";
 import { migrate } from "drizzle-orm/bun-sqlite/migrator";
 import type { Database } from "./schema.ts";
 
 // Relative to this file, so the migrations are found from any working
-// directory. The built server is one bundle in another folder, so it sets
-// MIGRATIONS_DIR instead.
+// directory. It uses import.meta.url because Vite's dev server has no
+// import.meta.dir. The built server is one bundle in another folder, so it
+// sets MIGRATIONS_DIR instead.
 const migrationsFolder = () =>
-  process.env.MIGRATIONS_DIR ?? resolve(import.meta.dir, "../migrations");
+  process.env.MIGRATIONS_DIR ??
+  fileURLToPath(new URL("../migrations", import.meta.url));
 
 /**
  * Opens (and creates) the database file at `path`, turns on WAL and foreign
