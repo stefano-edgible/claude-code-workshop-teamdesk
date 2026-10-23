@@ -28,7 +28,7 @@ data:
 
 places:
   teamdesk:
-    memory: 128 MB
-    disk: 1 GB
+    memory: 256 MB
+    disk: 1.5 GB
     arch: [amd64, arm64]
     gpu: none
