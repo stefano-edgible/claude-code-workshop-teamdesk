@@ -9,17 +9,18 @@ COPY apps/web/package.json apps/web/
 COPY packages/db/package.json packages/db/
 COPY packages/services/package.json packages/services/
 # No lifecycle scripts: `prepare` runs husky, which needs a git checkout.
-RUN bun install --frozen-lockfile --ignore-scripts
+RUN for i in 1 2 3; do timeout 240 bun install --frozen-lockfile --ignore-scripts && exit 0; done; exit 1
 COPY . .
 RUN cd apps/web && bun run build
 
 FROM oven/bun:1.3.11 AS deps
 WORKDIR /app
-COPY package.json bun.lock ./
+# Copied from the build stage only so the two installs run one after the other.
+COPY --from=build /app/package.json /app/bun.lock ./
 COPY apps/web/package.json apps/web/
 COPY packages/db/package.json packages/db/
 COPY packages/services/package.json packages/services/
-RUN bun install --frozen-lockfile --production --ignore-scripts
+RUN for i in 1 2 3; do timeout 240 bun install --frozen-lockfile --production --ignore-scripts && exit 0; done; exit 1
 
 FROM oven/bun:1.3.11-slim
 LABEL org.opencontainers.image.source="https://github.com/stefano-edgible/claude-code-workshop-teamdesk" \
